@@ -28,11 +28,70 @@ DISPLAY_COLUMNS = {
     "warning": "Alert",
 }
 
+DATE_COLUMNS = ["registration_date", "contract_date", "delivery_date"]
+NUMERIC_COLUMNS = [
+    "aci_cost_per_km",
+    "employee_contribution_annual",
+    "months_of_use",
+    "irpef_marginal_rate",
+    "manual_percentage",
+]
+TEXT_COLUMNS = ["brand", "model", "version", "fuel_type"]
+FUEL_OPTIONS = ["electric", "plug_in", "full_hybrid", "mild_hybrid", "benzina", "diesel", "other"]
+
+
+def _typed_empty_catalog_df() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "brand": pd.Series(dtype="string"),
+            "model": pd.Series(dtype="string"),
+            "version": pd.Series(dtype="string"),
+            "fuel_type": pd.Series(dtype="string"),
+            "aci_cost_per_km": pd.Series(dtype="float64"),
+            "registration_date": pd.Series(dtype="datetime64[ns]"),
+            "contract_date": pd.Series(dtype="datetime64[ns]"),
+            "delivery_date": pd.Series(dtype="datetime64[ns]"),
+            "employee_contribution_annual": pd.Series(dtype="float64"),
+            "months_of_use": pd.Series(dtype="float64"),
+            "irpef_marginal_rate": pd.Series(dtype="float64"),
+            "manual_percentage": pd.Series(dtype="float64"),
+        }
+    )[COLUMNS]
+
+
+def _prepare_catalog_for_editor(raw_df: pd.DataFrame | None) -> pd.DataFrame:
+    base_df = _typed_empty_catalog_df()
+    if raw_df is None:
+        return base_df
+
+    df = raw_df.copy()
+    for column in COLUMNS:
+        if column not in df.columns:
+            df[column] = pd.NA
+    df = df[COLUMNS]
+
+    for column in TEXT_COLUMNS:
+        df[column] = df[column].astype("string")
+        df[column] = df[column].replace({"nan": pd.NA, "None": pd.NA, "": pd.NA})
+
+    for column in NUMERIC_COLUMNS:
+        df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    for column in DATE_COLUMNS:
+        df[column] = pd.to_datetime(df[column], errors="coerce")
+
+    if "fuel_type" in df.columns:
+        normalized = df["fuel_type"].astype("string").str.strip().str.lower()
+        df["fuel_type"] = normalized.where(normalized.isin(FUEL_OPTIONS), other="other")
+        df.loc[normalized.isna(), "fuel_type"] = pd.NA
+
+    return df
+
 
 def _load_catalog() -> pd.DataFrame:
     if "catalog_df" not in st.session_state:
-        st.session_state.catalog_df = demo_catalog_df()
-    return st.session_state.catalog_df.copy()
+        st.session_state.catalog_df = _prepare_catalog_for_editor(demo_catalog_df())
+    return _prepare_catalog_for_editor(st.session_state.catalog_df)
 
 
 def _format_results_for_display(df: pd.DataFrame) -> pd.DataFrame:
@@ -66,10 +125,10 @@ def render_car_page() -> None:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         if st.button("Carica dati demo", use_container_width=True):
-            st.session_state.catalog_df = demo_catalog_df()
+            st.session_state.catalog_df = _prepare_catalog_for_editor(demo_catalog_df())
     with col2:
         if st.button("Azzera catalogo", use_container_width=True):
-            st.session_state.catalog_df = empty_template_df()
+            st.session_state.catalog_df = _typed_empty_catalog_df()
     with col3:
         st.download_button(
             "Scarica template CSV",
@@ -89,7 +148,7 @@ def render_car_page() -> None:
 
     uploaded = st.file_uploader("Carica il tuo catalogo CSV", type=["csv"])
     if uploaded is not None:
-        st.session_state.catalog_df = pd.read_csv(uploaded)
+        st.session_state.catalog_df = _prepare_catalog_for_editor(pd.read_csv(uploaded))
 
     st.markdown("### Parametri generali")
     p1, p2, p3 = st.columns(3)
@@ -113,10 +172,6 @@ def render_car_page() -> None:
 
     st.markdown("### Catalogo veicoli")
     catalog_df = _load_catalog()
-    for column in COLUMNS:
-        if column not in catalog_df.columns:
-            catalog_df[column] = None
-    catalog_df = catalog_df[COLUMNS]
 
     edited = st.data_editor(
         catalog_df,
@@ -129,14 +184,15 @@ def render_car_page() -> None:
             "version": st.column_config.TextColumn("Versione"),
             "fuel_type": st.column_config.SelectboxColumn(
                 "Alimentazione",
-                options=["electric", "plug_in", "full_hybrid", "mild_hybrid", "benzina", "diesel", "other"],
+                options=FUEL_OPTIONS,
+                required=False,
             ),
             "aci_cost_per_km": st.column_config.NumberColumn("Costo ACI per km", format="%.4f"),
             "registration_date": st.column_config.DateColumn("Data immatricolazione", format="YYYY-MM-DD"),
             "contract_date": st.column_config.DateColumn("Data contratto", format="YYYY-MM-DD"),
             "delivery_date": st.column_config.DateColumn("Data consegna", format="YYYY-MM-DD"),
             "employee_contribution_annual": st.column_config.NumberColumn("Contributo dipendente annuo", format="%.2f"),
-            "months_of_use": st.column_config.NumberColumn("Mesi utilizzo", min_value=1, max_value=12),
+            "months_of_use": st.column_config.NumberColumn("Mesi utilizzo", min_value=1, max_value=12, format="%.0f"),
             "irpef_marginal_rate": st.column_config.NumberColumn("Aliquota marginale IRPEF", min_value=0.0, max_value=1.0, format="%.2f"),
             "manual_percentage": st.column_config.NumberColumn(
                 "Percentuale manuale",
@@ -147,13 +203,13 @@ def render_car_page() -> None:
             ),
         },
     )
-    st.session_state.catalog_df = edited.copy()
+    st.session_state.catalog_df = _prepare_catalog_for_editor(edited)
 
     if edited.empty:
         st.warning("Il catalogo e vuoto. Inserisci almeno un veicolo per eseguire il confronto.")
         return
 
-    comparison_df = compute_car_dataframe(edited, threshold_amount, other_benefits_amount)
+    comparison_df = compute_car_dataframe(st.session_state.catalog_df, threshold_amount, other_benefits_amount)
     if show_only_complete:
         comparison_df = comparison_df[comparison_df["annual_net_of_contribution"].notna()].copy()
 
