@@ -12,9 +12,10 @@ def render_home() -> None:
         Questa app e pensata come base pronta per GitHub e Streamlit Community Cloud.
 
         **Modulo 1 - Dipendente**
-        - confronto tra elettrica, plug-in e altre auto
+        - confronto tra elettrica, plug-in, benzina, diesel e altre auto
         - spiegazione diretta del processo di calcolo
         - base ACI 15.000 km, quota periodo e imponibile netto evidenziati nei risultati
+        - nota chiara sulla soglia fringe generale da **1.000 / 2.000 euro**
         - ranking automatico delle opzioni e export CSV/XLSX
 
         **Modulo 2 - Azienda**
@@ -37,9 +38,9 @@ def render_home() -> None:
             """
             1. Carica o modifica il catalogo veicoli nel modulo auto.
             2. Inserisci il costo ACI ufficiale per ogni modello.
-            3. Compila il modulo colonnine scegliendo la fascia posti auto del sito aziendale.
-            4. Esporta i risultati per condividerli con HR, fleet o facility.
-            5. Usa README e requirements inclusi per pubblicare tutto su GitHub.
+            3. Seleziona la soglia fringe standard da 1.000 euro oppure quella da 2.000 euro per figli a carico.
+            4. Compila il modulo colonnine scegliendo la fascia posti auto del sito aziendale.
+            5. Esporta i risultati per condividerli con HR, fleet o facility.
             """
         )
     with right:
@@ -47,8 +48,8 @@ def render_home() -> None:
         st.markdown(
             """
             - I casi 2025 transitori vanno sempre validati dal payroll.
+            - La soglia da 1.000 / 2.000 euro non e il massimo del fringe auto: e solo il limite generale di esenzione dei fringe benefit.
             - La sezione colonnine e un pre-check, non una verifica progettuale definitiva.
-            - Le equivalenze tra Tipologia A, Tipologia B e HPC vanno confermate dal tecnico.
             - I dati demo inclusi non sono pronti per uso operativo.
             """
         )

@@ -4,51 +4,6 @@ from io import BytesIO
 
 import pandas as pd
 
-DEMO_CARS = [
-    {
-        "brand": "Demo",
-        "model": "City EV",
-        "version": "60 kWh",
-        "fuel_type": "electric",
-        "aci_cost_per_km": 0.68,
-        "registration_date": "2026-01-10",
-        "contract_date": "2026-01-15",
-        "delivery_date": "2026-02-01",
-        "employee_contribution_annual": 0,
-        "months_of_use": 12,
-        "irpef_marginal_rate": 0.35,
-        "manual_percentage": None,
-    },
-    {
-        "brand": "Demo",
-        "model": "Family PHEV",
-        "version": "1.6 Plug-in",
-        "fuel_type": "plug_in",
-        "aci_cost_per_km": 0.73,
-        "registration_date": "2026-01-10",
-        "contract_date": "2026-01-15",
-        "delivery_date": "2026-02-01",
-        "employee_contribution_annual": 480,
-        "months_of_use": 12,
-        "irpef_marginal_rate": 0.35,
-        "manual_percentage": None,
-    },
-    {
-        "brand": "Demo",
-        "model": "Business Hybrid",
-        "version": "2.0 Full Hybrid",
-        "fuel_type": "full_hybrid",
-        "aci_cost_per_km": 0.79,
-        "registration_date": "2026-01-10",
-        "contract_date": "2026-01-15",
-        "delivery_date": "2026-02-01",
-        "employee_contribution_annual": 720,
-        "months_of_use": 12,
-        "irpef_marginal_rate": 0.35,
-        "manual_percentage": None,
-    },
-]
-
 COLUMNS = [
     "brand",
     "model",
@@ -66,7 +21,69 @@ COLUMNS = [
 
 
 def demo_catalog_df() -> pd.DataFrame:
-    return pd.DataFrame(DEMO_CARS, columns=COLUMNS)
+    rows = [
+        {
+            "brand": "Tesla",
+            "model": "Model 3",
+            "version": "RWD",
+            "fuel_type": "electric",
+            "aci_cost_per_km": 0.62,
+            "registration_date": "2026-01-15",
+            "contract_date": "2026-01-20",
+            "delivery_date": "2026-02-01",
+            "employee_contribution_annual": 0.0,
+            "months_of_use": 12,
+            "irpef_marginal_rate": 0.35,
+            "manual_percentage": None,
+        },
+        {
+            "brand": "BMW",
+            "model": "X1",
+            "version": "xDrive25e",
+            "fuel_type": "plug_in",
+            "aci_cost_per_km": 0.71,
+            "registration_date": "2026-01-12",
+            "contract_date": "2026-01-18",
+            "delivery_date": "2026-02-05",
+            "employee_contribution_annual": 0.0,
+            "months_of_use": 12,
+            "irpef_marginal_rate": 0.35,
+            "manual_percentage": None,
+        },
+        {
+            "brand": "Volkswagen",
+            "model": "Golf",
+            "version": "1.5 TSI",
+            "fuel_type": "benzina",
+            "aci_cost_per_km": 0.59,
+            "registration_date": "2026-01-10",
+            "contract_date": "2026-01-16",
+            "delivery_date": "2026-02-03",
+            "employee_contribution_annual": 0.0,
+            "months_of_use": 12,
+            "irpef_marginal_rate": 0.35,
+            "manual_percentage": None,
+        },
+        {
+            "brand": "Peugeot",
+            "model": "308",
+            "version": "BlueHDi",
+            "fuel_type": "diesel",
+            "aci_cost_per_km": 0.61,
+            "registration_date": "2026-01-11",
+            "contract_date": "2026-01-17",
+            "delivery_date": "2026-02-04",
+            "employee_contribution_annual": 0.0,
+            "months_of_use": 12,
+            "irpef_marginal_rate": 0.35,
+            "manual_percentage": None,
+        },
+    ]
+    df = pd.DataFrame(rows)
+    for column in COLUMNS:
+        if column not in df.columns:
+            df[column] = pd.NA
+    return df[COLUMNS]
 
 
 def empty_template_df() -> pd.DataFrame:
@@ -78,7 +95,7 @@ def csv_bytes_from_df(df: pd.DataFrame) -> bytes:
 
 
 def xlsx_bytes_from_df(df: pd.DataFrame) -> bytes:
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="catalogo")
-    return buffer.getvalue()
+    return output.getvalue()
