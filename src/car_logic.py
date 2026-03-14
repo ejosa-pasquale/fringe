@@ -66,12 +66,25 @@ def parse_date(value: Any) -> date | None:
         return None
     if isinstance(value, str) and value.strip() == "":
         return None
-    if pd.isna(value):
-        return None
+    try:
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+
+    # pd.Timestamp is a subclass of datetime/date, but keeping it as-is can
+    # raise TypeError later when compared with datetime.date values.
+    if isinstance(value, pd.Timestamp):
+        return value.date()
     if isinstance(value, date):
         return value
     try:
-        return pd.to_datetime(value).date()
+        parsed = pd.to_datetime(value, errors="coerce")
+        if pd.isna(parsed):
+            return None
+        if isinstance(parsed, pd.Timestamp):
+            return parsed.date()
+        return parsed
     except Exception:
         return None
 
