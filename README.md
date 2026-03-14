@@ -7,11 +7,16 @@ App Streamlit multipagina per due casi d'uso aziendali:
 
 ## Novita della versione aggiornata
 
-- interfaccia auto piu chiara con ranking automatico
+- spiegazione passo-passo del processo di calcolo del fringe benefit direttamente nell'app
+- colonne risultato piu leggibili: base ACI 15.000 km, quota periodo, fringe teorico, fringe per periodo e imponibile netto
 - export risultati in CSV e XLSX
 - alert per righe incomplete o casi in manual review
-- modulo colonnine corretto per gestire le formule scalari e le opzioni alternative A/B
-- evidenza del numero minimo di posti da predisporre per la canalizzazione quando prevista
+- modulo colonnine piu chiaro con distinzione netta tra:
+  - **colonnine AC**
+  - **colonnine DC**
+  - **predisposizioni**
+- selezione della **fascia posti auto** richiamata dal decreto, con numero effettivo di posti all'interno della fascia per mantenere il calcolo puntuale
+- evidenza delle configurazioni alternative A/B quando ammesse
 
 ## Cosa include
 
@@ -64,13 +69,18 @@ Prima dell'uso reale sostituisci sempre:
 
 ## Logica del modulo auto
 
-- se immatricolazione, contratto e consegna sono tutte dal 01/01/2025 in poi, il modulo applica automaticamente la nuova disciplina
-- categorie gestite:
-  - `electric` -> elettrica pura
-  - `plug_in` -> ibrida plug-in
-  - tutte le altre -> altri veicoli
-- se il caso non rientra automaticamente nella nuova disciplina, il modulo segnala `manual review`
-- il campo `manual_percentage` consente di inserire un'aliquota manuale solo per simulazioni interne
+Il simulatore mostra direttamente il processo di calcolo:
+
+1. verifica del regime applicabile
+2. scelta della percentuale fiscale
+3. calcolo della base ACI convenzionale su **15.000 km**
+4. calcolo del fringe annuo teorico
+5. riproporzionamento per i mesi di utilizzo
+6. sottrazione dell'eventuale contributo del dipendente
+7. confronto con la soglia fringe impostata nel simulatore
+
+Se il caso non rientra automaticamente nella nuova disciplina, il modulo segnala `manual review`.
+Il campo `manual_percentage` consente di inserire un'aliquota manuale solo per simulazioni interne.
 
 ## Logica del modulo colonnine
 
@@ -78,10 +88,13 @@ Il modulo e pensato per **aziende / edifici non residenziali**.
 Output:
 
 - stato di applicabilita del pre-check
-- target minimo immediato
+- obbligo minimo immediato espresso in:
+  - numero minimo di **colonnine AC**
+  - numero minimo di **colonnine DC**
+  - numero minimo di **predisposizioni**
 - target pieno al 2030 per gli edifici esistenti
 - opzioni alternative A/B quando rilevanti
-- evidenza della canalizzazione minima quando prevista
+- selezione guidata della fascia posti auto prevista dal decreto
 
 ## Limiti voluti del progetto
 

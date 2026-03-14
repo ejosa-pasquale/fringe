@@ -13,12 +13,14 @@ def render_home() -> None:
 
         **Modulo 1 - Dipendente**
         - confronto tra elettrica, plug-in e altre auto
-        - calcolo del fringe benefit annuo, del valore per il periodo di assegnazione e dell'imponibile mensile
+        - spiegazione diretta del processo di calcolo
+        - base ACI 15.000 km, quota periodo e imponibile netto evidenziati nei risultati
         - ranking automatico delle opzioni e export CSV/XLSX
 
         **Modulo 2 - Azienda**
         - verifica preliminare degli obblighi minimi per i parcheggi aziendali
-        - distinzione tra accesso privato e accesso pubblico
+        - distinzione immediata tra **colonnine AC**, **colonnine DC** e **predisposizioni**
+        - selezione guidata delle fasce posti auto richiamate dal decreto
         - differenza tra nuova costruzione, ristrutturazione importante ed edificio esistente
         - gestione di opzioni alternative A/B quando previste dal pre-check
         """
@@ -35,7 +37,7 @@ def render_home() -> None:
             """
             1. Carica o modifica il catalogo veicoli nel modulo auto.
             2. Inserisci il costo ACI ufficiale per ogni modello.
-            3. Compila il modulo colonnine con i dati del sito aziendale.
+            3. Compila il modulo colonnine scegliendo la fascia posti auto del sito aziendale.
             4. Esporta i risultati per condividerli con HR, fleet o facility.
             5. Usa README e requirements inclusi per pubblicare tutto su GitHub.
             """

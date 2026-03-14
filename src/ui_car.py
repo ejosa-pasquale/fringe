@@ -13,7 +13,10 @@ DISPLAY_COLUMNS = {
     "regime": "Regime",
     "regime_note": "Nota regime",
     "fiscal_category": "Categoria fiscale",
+    "annual_reference_km": "Km convenzionali",
+    "annual_aci_reference_value": "Base ACI 15.000 km",
     "percentage": "% applicata",
+    "assignment_ratio": "Quota periodo",
     "annual_gross_full_year": "Fringe annuo teorico",
     "gross_for_assignment_period": "Fringe per periodo di assegnazione",
     "employee_contribution_annual": "Contributo dipendente annuo",
@@ -38,6 +41,31 @@ NUMERIC_COLUMNS = [
 ]
 TEXT_COLUMNS = ["brand", "model", "version", "fuel_type"]
 FUEL_OPTIONS = ["electric", "plug_in", "full_hybrid", "mild_hybrid", "benzina", "diesel", "other"]
+
+
+RESULT_COLUMN_ORDER = [
+    "Veicolo",
+    "Alimentazione",
+    "Categoria fiscale",
+    "Regime",
+    "% applicata",
+    "Km convenzionali",
+    "Base ACI 15.000 km",
+    "Quota periodo",
+    "Fringe annuo teorico",
+    "Fringe per periodo di assegnazione",
+    "Contributo dipendente annuo",
+    "Imponibile annuo netto contributo",
+    "Imponibile mensile",
+    "Mesi utilizzo",
+    "Fringe complessivi",
+    "Residuo soglia",
+    "Eccedenza soglia",
+    "Stima costo fiscale annuo",
+    "Stima costo fiscale mensile",
+    "Nota regime",
+    "Alert",
+]
 
 
 def _typed_empty_catalog_df() -> pd.DataFrame:
@@ -97,6 +125,7 @@ def _load_catalog() -> pd.DataFrame:
 def _format_results_for_display(df: pd.DataFrame) -> pd.DataFrame:
     view_df = df.copy()
     currency_cols = [
+        "annual_aci_reference_value",
         "annual_gross_full_year",
         "gross_for_assignment_period",
         "employee_contribution_annual",
@@ -113,14 +142,59 @@ def _format_results_for_display(df: pd.DataFrame) -> pd.DataFrame:
             view_df[col] = view_df[col].map(lambda x: None if pd.isna(x) else round(float(x), 2))
     if "percentage" in view_df.columns:
         view_df["percentage"] = view_df["percentage"].map(lambda x: None if pd.isna(x) else round(float(x) * 100, 2))
+    if "assignment_ratio" in view_df.columns:
+        view_df["assignment_ratio"] = view_df["assignment_ratio"].map(lambda x: None if pd.isna(x) else round(float(x) * 100, 2))
     if "regime" in view_df.columns:
         view_df["regime"] = view_df["regime"].replace({"new_2025": "Nuova disciplina 2025+", "manual_review": "Manual review"})
-    return view_df.rename(columns=DISPLAY_COLUMNS)
+    view_df = view_df.rename(columns=DISPLAY_COLUMNS)
+    ordered = [col for col in RESULT_COLUMN_ORDER if col in view_df.columns]
+    return view_df[ordered]
+
+
+def _render_calculation_explainer() -> None:
+    with st.expander("Come funziona il calcolo del fringe benefit", expanded=True):
+        st.markdown(
+            """
+            **Il simulatore usa questo processo di calcolo:**
+
+            1. **Verifica il regime applicabile**
+               - se immatricolazione, contratto e consegna sono tutte dal **01/01/2025** in poi, applica la nuova disciplina;
+               - altrimenti segnala **manual review**.
+
+            2. **Individua la percentuale fiscale**
+               - **10%** per elettrica pura;
+               - **20%** per ibrida plug-in;
+               - **50%** per full hybrid, mild hybrid, benzina, diesel e altri veicoli.
+
+            3. **Calcola la base convenzionale ACI**
+               - `costo ACI per km x 15.000 km`.
+
+            4. **Calcola il fringe annuo teorico**
+               - `base ACI 15.000 km x percentuale fiscale`.
+
+            5. **Riproporziona per il periodo di assegnazione**
+               - `fringe annuo teorico x (mesi utilizzo / 12)`.
+
+            6. **Sottrae l'eventuale contributo del dipendente**
+               - `fringe per periodo - contributo dipendente annuo`.
+
+            7. **Mostra l'imponibile mensile**
+               - `imponibile annuo netto / mesi di utilizzo`.
+
+            8. **Confronta la soglia fringe impostata nel simulatore**
+               - somma il valore auto agli altri fringe benefit indicati.
+            """
+        )
+        st.info(
+            "La stima fiscale annua e mensile appare solo se compili anche l'aliquota marginale IRPEF. In caso contrario il simulatore si ferma correttamente all'imponibile fringe benefit."
+        )
 
 
 def render_car_page() -> None:
     st.title("Calcolo fringe benefit auto")
-    st.caption("Confronto veicoli per il dipendente con catalogo caricabile, ranking automatico ed export risultati")
+    st.caption("Confronto veicoli per il dipendente con spiegazione del calcolo, ranking automatico ed export risultati")
+
+    _render_calculation_explainer()
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -238,29 +312,39 @@ def render_car_page() -> None:
         )
 
     if not invalid_rows.empty:
-        st.warning(f"Ci sono {len(invalid_rows)} righe incomplete o in manual review senza percentuale manuale: controlla la colonna Alert.")
+        st.warning(f"Ci sono {len(invalid_rows)} righe incomplete o in manual review senza percentuale manuale.")
 
-    st.markdown("### Risultati")
-    display_df = _format_results_for_display(comparison_df)
-    st.dataframe(display_df, use_container_width=True)
+    result_view = _format_results_for_display(comparison_df)
+    st.markdown("### Risultati dettagliati")
+    st.dataframe(result_view, use_container_width=True, hide_index=True)
 
-    export_csv = display_df.to_csv(index=False).encode("utf-8")
-    export_xlsx = xlsx_bytes_from_df(display_df)
-    e1, e2 = st.columns(2)
-    e1.download_button("Scarica risultati CSV", data=export_csv, file_name="fringe_results.csv", mime="text/csv", use_container_width=True)
-    e2.download_button(
-        "Scarica risultati XLSX",
-        data=export_xlsx,
-        file_name="fringe_results.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    with st.expander("Come leggere i risultati", expanded=False):
+        st.markdown(
+            """
+            - **Base ACI 15.000 km**: costo ACI per km moltiplicato per la percorrenza convenzionale.
+            - **% applicata**: percentuale fiscale usata dal simulatore.
+            - **Quota periodo**: percentuale di anno coperta dall'assegnazione.
+            - **Fringe annuo teorico**: valore annuale pieno prima del riproporzionamento.
+            - **Fringe per periodo di assegnazione**: valore annuale riproporzionato ai mesi di utilizzo.
+            - **Imponibile annuo netto contributo**: valore dopo aver sottratto l'eventuale contributo del dipendente.
+            - **Imponibile mensile**: quota media mensile dell'imponibile nel periodo di utilizzo.
+            - **Residuo soglia / Eccedenza soglia**: confronto tra l'auto e la soglia fringe che hai impostato nel simulatore.
+            """
+        )
+
+    st.markdown("### Export")
+    export_csv = result_view.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "Scarica risultati CSV",
+        data=export_csv,
+        file_name="fringe_benefit_results.csv",
+        mime="text/csv",
         use_container_width=True,
     )
-
-    if not valid_rank.empty:
-        chart_df = valid_rank[["vehicle_label", "annual_net_of_contribution"]].set_index("vehicle_label")
-        st.markdown("### Confronto rapido")
-        st.bar_chart(chart_df)
-
-    st.info(
-        "La soglia fringe e mostrata come supporto decisionale. Valutazione fiscale definitiva e gestione busta paga restano in capo a HR/payroll."
+    st.download_button(
+        "Scarica risultati XLSX",
+        data=xlsx_bytes_from_df(result_view),
+        file_name="fringe_benefit_results.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
     )

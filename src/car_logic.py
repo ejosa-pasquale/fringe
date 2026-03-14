@@ -17,6 +17,9 @@ class CarComputation:
     regime_note: str
     fiscal_category: str
     percentage: float | None
+    annual_reference_km: int | None
+    annual_aci_reference_value: float | None
+    assignment_ratio: float | None
     annual_gross_full_year: float | None
     gross_for_assignment_period: float | None
     employee_contribution_annual: float | None
@@ -72,8 +75,6 @@ def parse_date(value: Any) -> date | None:
     except Exception:
         pass
 
-    # pd.Timestamp is a subclass of datetime/date, but keeping it as-is can
-    # raise TypeError later when compared with datetime.date values.
     if isinstance(value, pd.Timestamp):
         return value.date()
     if isinstance(value, date):
@@ -184,6 +185,9 @@ def compute_car_benefit(
             regime_note=regime_note,
             fiscal_category=fiscal_category_for_fuel(fuel_type),
             percentage=percentage,
+            annual_reference_km=15000 if aci_cost is not None else None,
+            annual_aci_reference_value=(float(aci_cost) * 15000) if aci_cost is not None else None,
+            assignment_ratio=months / 12,
             annual_gross_full_year=None,
             gross_for_assignment_period=None,
             employee_contribution_annual=contribution,
@@ -199,8 +203,11 @@ def compute_car_benefit(
             warning=warning,
         )
 
-    annual_gross_full_year = float(aci_cost) * 15000 * float(percentage)
-    gross_for_assignment_period = annual_gross_full_year * (months / 12)
+    annual_reference_km = 15000
+    annual_aci_reference_value = float(aci_cost) * annual_reference_km
+    annual_gross_full_year = annual_aci_reference_value * float(percentage)
+    assignment_ratio = months / 12
+    gross_for_assignment_period = annual_gross_full_year * assignment_ratio
     annual_net = max(gross_for_assignment_period - float(contribution), 0.0)
     monthly_net = annual_net / months
     combined = other_benefits_amount + annual_net
@@ -220,6 +227,9 @@ def compute_car_benefit(
         regime_note=regime_note,
         fiscal_category=fiscal_category_for_fuel(fuel_type),
         percentage=float(percentage),
+        annual_reference_km=annual_reference_km,
+        annual_aci_reference_value=annual_aci_reference_value,
+        assignment_ratio=assignment_ratio,
         annual_gross_full_year=annual_gross_full_year,
         gross_for_assignment_period=gross_for_assignment_period,
         employee_contribution_annual=contribution,
