@@ -38,8 +38,8 @@ def _private_new(parking_spaces: int) -> list[RequirementOption]:
         return [RequirementOption("Configurazione minima", min_a=3 * floor(parking_spaces / 20), canalization_required=True, canalization_spaces=canal)]
     if 101 <= parking_spaces <= 500:
         return [
-            RequirementOption("Opzione Solo AC", min_a=3 * floor(parking_spaces / 50), canalization_required=True, canalization_spaces=canal),
-            RequirementOption("Opzione con DC", min_b=1, canalization_required=True, canalization_spaces=canal),
+            RequirementOption("Opzione A", min_a=3 * floor(parking_spaces / 50), canalization_required=True, canalization_spaces=canal),
+            RequirementOption("Opzione B", min_b=1, canalization_required=True, canalization_spaces=canal),
         ]
     if 501 <= parking_spaces <= 1000:
         return [RequirementOption("Configurazione minima", min_b=2, canalization_required=True, canalization_spaces=canal)]
