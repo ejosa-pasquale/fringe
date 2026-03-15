@@ -13,8 +13,8 @@ st.set_page_config(
 )
 
 home_page = st.Page(render_home, title="Home", icon="🏠", default=True)
-car_page = st.Page(render_car_page, title="Fringe benefit auto", icon="🚗")
-charging_page = st.Page(render_charging_page, title="Colonnine azienda", icon="🔌")
+car_page = st.Page(render_car_page, title="Fringe benefit auto aziendali", icon="🚗")
+charging_page = st.Page(render_charging_page, title="DM 25.10.2025 - Decreto Requisiti Minimi", icon="🔌")
 
 nav = st.navigation([home_page, car_page, charging_page], position="sidebar")
 
